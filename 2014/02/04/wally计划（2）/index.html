@@ -109,44 +109,56 @@ Wally平台会对满足该格式的任务进行脚本分配，忽视不满足格
 39
 40
 41
+42
+43
+44
+45
+46
+47
 </pre></td><td class="code"><pre><span class="comment"># coding=utf-8</span>
 
 <span class="keyword">import</span> os
 <span class="keyword">import</span> re
 <span class="keyword">import</span> subprocess
+<span class="keyword">import</span> shutil
+<span class="keyword">import</span> glob
 
 INTERPRETER = <span class="string">"/usr/bin/python"</span>
 MAIL_DIR = <span class="string">"mail"</span>
+OTHER_DIR = <span class="string">"other"</span>
 
 <span class="comment">#定义合规的主题名</span>
 subject_tmpl = re.compile(<span class="string">'([a-zA-Z])\s*-\s*(\w+)\s*-\s*(\d+)'</span>)
 
+<span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">(dst=MAIL_DIR)</span>:</span>
+    mails = os.listdir(dst)
+    <span class="keyword">for</span> mail <span class="keyword">in</span> mails:
+        mail_dir = os.path.join(MAIL_DIR, mail)
+        <span class="keyword">for</span> file <span class="keyword">in</span> glob.glob(<span class="string">"%s/*.log"</span> % mail_dir):
+            match = subject_tmpl.search(os.path.basename(file))
 
-<span class="function"><span class="keyword">def</span> <span class="title">visit</span><span class="params">(arg, dirname, filenames)</span>:</span>
-    <span class="keyword">for</span> filename <span class="keyword">in</span> filenames:
-        match = subject_tmpl.search(filename)
-        <span class="keyword">if</span> match:
-            <span class="comment">#规范化任务参数</span>
-            job_type = match.group(<span class="number">1</span>).lower()
-            job_user = match.group(<span class="number">2</span>).lower()
-            job_id = int(match.group(<span class="number">3</span>))
+            <span class="keyword">if</span> match:
+                <span class="comment">#规范化任务参数</span>
+                job_type = match.group(<span class="number">1</span>).lower()
+                job_user = match.group(<span class="number">2</span>).lower()
+                job_id = int(match.group(<span class="number">3</span>))
 
-            <span class="comment">#整合成需要调用的脚本名</span>
-            job_script = job_type + <span class="string">'-'</span> + job_user + <span class="string">'-'</span> + str(job_id) + <span class="string">'.py'</span>
-            job_script_path = os.path.join(<span class="string">"script"</span>, job_script)
-            args = [INTERPRETER, job_script_path, os.path.join(dirname, filename)]
+                <span class="comment">#整合成需要调用的脚本名</span>
+                job_script = job_type + <span class="string">'-'</span> + job_user + <span class="string">'-'</span> + str(job_id) + <span class="string">'.py'</span>
+                job_script_path = os.path.join(<span class="string">"script"</span>, job_script)
+                args = [INTERPRETER, job_script_path, file]
 
-            <span class="comment">#调用脚本并将对应的log文件名作为参数传递</span>
-            <span class="keyword">if</span> os.path.exists(job_script_path):
-                <span class="keyword">try</span>:
-                    subprocess.check_call(args)
-                <span class="keyword">except</span> subprocess.CalledProcessError:
-                    <span class="keyword">print</span> <span class="string">"脚本 "</span> + job_script + <span class="string">" 执行错误"</span>
+                <span class="comment">#调用脚本并将对应的log文件名作为参数传递</span>
+                <span class="keyword">if</span> os.path.exists(job_script_path):
+                    <span class="keyword">try</span>:
+                        subprocess.check_call(args)
+                    <span class="keyword">except</span> subprocess.CalledProcessError:
+                        <span class="keyword">print</span> <span class="string">"脚本 "</span> + job_script + <span class="string">" 执行错误"</span>
 
-
-<span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">(dict=MAIL_DIR)</span>:</span>
-    os.path.walk(dict, visit, <span class="number">1</span>)
-
+            <span class="comment">#将不匹配的邮件转移到OTHER_DIR</span>
+            <span class="keyword">else</span>:
+                shutil.move(mail_dir, OTHER_DIR)
+                <span class="keyword">break</span>
 
 <span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
     main(MAIL_DIR)
