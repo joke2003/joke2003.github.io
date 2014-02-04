@@ -131,11 +131,6 @@
 65
 66
 67
-68
-69
-70
-71
-72
 </pre></td><td class="code"><pre><span class="comment"># coding=utf-8</span>
 <span class="keyword">import</span> poplib
 <span class="keyword">import</span> os
@@ -143,11 +138,6 @@
 <span class="keyword">from</span> email <span class="keyword">import</span> parser, utils, Header
 
 <span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">(username, password, host, port=<span class="number">995</span>)</span>:</span>
-    <span class="comment">#获取邮件服务器信息</span>
-    username = username
-    password = password
-    host = host
-    port = port
 
     <span class="comment">#登录邮件服务器</span>
     pop_conn = poplib.POP3_SSL(host, port)
